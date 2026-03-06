@@ -1,141 +1,90 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Dictation Spelling Game</title>
-  <link rel="stylesheet" href="style.css" />
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dictation Spelling Game</title>
+<link rel="stylesheet" href="style.css">
 </head>
+
 <body>
-  <header>
-    <h1>Dictation Spelling Game</h1>
-    <div class="sub">Teacher loads sentences. Click “Start Session” to hide the sentence window.</div>
-  </header>
 
-  <main class="grid">
-    <!-- TEACHER PANEL -->
-    <section class="card" id="teacherPanel">
-      <h2>Teacher</h2>
+<header>
+<h1>Dictation Spelling Game</h1>
+<div class="sub">Teacher loads sentences. Click Start Session to begin.</div>
+</header>
 
-      <!-- This whole block disappears after Start Session -->
-      <div id="setupPanel">
-        <label class="label">Paste sentences (one per line)</label>
-        <textarea id="sentencesInput" rows="10" placeholder="1) The committee remained ambivalent about the proposal because the consequences were unclear.
-2) Her pragmatic approach focused on solutions that could actually work in the school budget."></textarea>
+<main class="grid">
 
-        <div class="row">
-          <button id="startSessionBtn">Start Session (Hide Sentences)</button>
-          <button id="shuffleBtn" class="secondary" disabled>Shuffle Order</button>
-          <button id="retryMissesBtn" class="secondary" disabled>Retry Misses</button>
-        </div>
+<section class="card" id="teacherPanel">
 
-        <hr />
-      </div>
+<h2>Teacher</h2>
 
-      <!-- Audio + settings stay visible after setupPanel hides -->
-      <label class="label">Audio (optional)</label>
-      <div class="row">
-        <button id="speakBtn" class="secondary" disabled>🔊 Play Audio</button>
-        <button id="repeatBtn" class="secondary" disabled>🔁 Repeat</button>
-        <button id="stopBtn" class="secondary" disabled>⏹ Stop</button>
-      </div>
+<div id="setupPanel">
 
-      <div class="row">
-        <label class="checkbox">
-          <input type="checkbox" id="autoSpeak" />
-          Auto-play each sentence
-        </label>
-        <label class="checkbox">
-          <input type="checkbox" id="strictMode" checked />
-          Strict (punctuation/caps matter)
-        </label>
-      </div>
+<label class="label">Paste sentences (one per line)</label>
 
-      <div class="row">
-        <label class="label-inline">Voice</label>
-        <select id="voiceSelect"></select>
-      </div>
+<textarea id="sentencesInput" rows="10"></textarea>
 
-      <div class="row">
-        <label class="label-inline">Rate</label>
-        <input id="rate" type="range" min="0.6" max="1.3" step="0.05" value="1.0" />
-        <span id="rateVal" class="mono">1.00</span>
-      </div>
+<div class="row">
+<button id="startSessionBtn">Start Session</button>
+<button id="shuffleBtn" class="secondary" disabled>Shuffle</button>
+<button id="retryMissesBtn" class="secondary" disabled>Retry Misses</button>
+</div>
 
-      <div class="row">
-        <label class="label-inline">Pitch</label>
-        <input id="pitch" type="range" min="0.7" max="1.3" step="0.05" value="1.0" />
-        <span id="pitchVal" class="mono">1.00</span>
-      </div>
+<hr>
 
-      <hr />
+</div>
 
-      <label class="label">ElevenLabs (better voice)</label>
+<div class="row">
+<button id="speakBtn" disabled>Play</button>
+<button id="repeatBtn" disabled>Repeat</button>
+<button id="stopBtn" disabled>Stop</button>
+</div>
 
-      <div class="row">
-        <label class="label-inline">Use</label>
-        <select id="ttsProvider">
-          <option value="browser">Browser voice</option>
-          <option value="elevenlabs">ElevenLabs</option>
-        </select>
-      </div>
+<div class="row">
+<label class="checkbox">
+<input type="checkbox" id="autoSpeak">
+Auto Play
+</label>
 
-      <div class="row">
-        <label class="label-inline">Voice</label>
-        <input id="elevenVoiceId" type="text" placeholder="Voice ID (e.g., from ElevenLabs)" />
-      </div>
+<label class="checkbox">
+<input type="checkbox" id="strictMode" checked>
+Strict Mode
+</label>
+</div>
 
-      <div class="row">
-        <label class="label-inline">Model</label>
-        <select id="elevenModel">
-          <option value="eleven_turbo_v2_5">eleven_turbo_v2_5 (fast)</option>
-          <option value="eleven_multilingual_v2">eleven_multilingual_v2</option>
-        </select>
-      </div>
+</section>
 
-      <div class="hint">
-        ElevenLabs audio is routed through a secure Cloudflare Worker.
-      </div>
-    </section>
+<section class="card">
 
-    <!-- STUDENT PANEL -->
-    <section class="card">
-      <h2>Student</h2>
+<h2>Student</h2>
 
-      <div class="status">
-        <div>Round: <span id="roundNum" class="mono">0</span>/<span id="roundTotal" class="mono">0</span></div>
-        <div>⭐ Correct: <span id="correctCount" class="mono">0</span> | ❌ Missed: <span id="missCount" class="mono">0</span></div>
-      </div>
+<div class="status">
+<div>Round: <span id="roundNum">0</span>/<span id="roundTotal">0</span></div>
+<div>Correct: <span id="correctCount">0</span> | Missed: <span id="missCount">0</span></div>
+</div>
 
-      <div class="promptBox">
-        <div class="label">Dictation</div>
-        <div id="maskedHint" class="maskedHint"></div>
-      </div>
+<textarea id="studentInput" rows="4" disabled></textarea>
 
-      <label class="label">Type exactly what you hear</label>
-      <textarea id="studentInput" rows="4" placeholder="Type the sentence here..." disabled></textarea>
+<div class="row">
+<button id="checkBtn" disabled>Check</button>
+<button id="nextBtn" disabled>Next</button>
+<button id="revealBtn" disabled>Reveal</button>
+</div>
 
-      <div class="row">
-        <button id="checkBtn" disabled>Check</button>
-        <button id="nextBtn" class="secondary" disabled>Next</button>
-        <button id="revealBtn" class="secondary" disabled>Reveal</button>
-      </div>
+<div id="feedback"></div>
 
-      <div id="feedback" class="feedback"></div>
+<details>
+<summary>Show Correct Sentence</summary>
+<div id="correctSentence"></div>
+</details>
 
-      <details class="details">
-        <summary>Show correct sentence</summary>
-        <div id="correctSentence" class="correctSentence"></div>
-      </details>
+</section>
 
-      <div class="tiny">Refresh resets everything.</div>
-    </section>
-  </main>
+</main>
 
-  <footer>
-    <div class="tiny">Built with browser TTS or ElevenLabs. Works best in Chrome.</div>
-  </footer>
+<script src="app.js"></script>
 
-  <script src="app.js"></script>
 </body>
 </html>
