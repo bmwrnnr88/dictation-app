@@ -68,7 +68,6 @@
         <span id="pitchVal" class="mono">1.00</span>
       </div>
 
-      <!-- ElevenLabs controls (these must exist for your current app.js) -->
       <hr />
 
       <label class="label">ElevenLabs (better voice)</label>
@@ -79,11 +78,6 @@
           <option value="browser">Browser voice</option>
           <option value="elevenlabs">ElevenLabs</option>
         </select>
-      </div>
-
-      <div class="row">
-        <label class="label-inline">API Key</label>
-        <input id="elevenKey" type="password" placeholder="Paste ElevenLabs API key (NOT safe for students)" />
       </div>
 
       <div class="row">
@@ -100,7 +94,7 @@
       </div>
 
       <div class="hint">
-        Note: API key in-browser is not safe for a student-facing deployment. Use a proxy (Cloudflare Worker) to hide the key.
+        ElevenLabs audio is routed through a secure Cloudflare Worker.
       </div>
     </section>
 
