@@ -2,7 +2,7 @@
 
 // ---------- CONFIG ----------
 const WORKER_TTS_URL = "https://broad-smoke-1c9d.brendanw.workers.dev";
-const FIXED_VOICE_ID = "JBFqnCBsd6RMkjVDRZzb";
+const FIXED_VOICE_ID = "PASTE_YOUR_REAL_VOICE_ID_HERE";
 const FIXED_MODEL_ID = "eleven_turbo_v2_5";
 
 // ---------- Utilities ----------
@@ -179,6 +179,10 @@ async function speak(text) {
     throw new Error("No sentence loaded.");
   }
 
+  if (!FIXED_VOICE_ID || FIXED_VOICE_ID === "PASTE_YOUR_REAL_VOICE_ID_HERE") {
+    throw new Error("You still need to paste your real ElevenLabs voice ID into FIXED_VOICE_ID.");
+  }
+
   if (currentAudio) {
     currentAudio.pause();
     currentAudio.currentTime = 0;
@@ -225,10 +229,13 @@ function renderStatus() {
 
 async function setRound(sentence) {
   currentSentence = sentence;
-  correctSentence.textContent = sentence;
+
+  if (correctSentence) correctSentence.textContent = sentence;
   studentInput.value = "";
   feedback.innerHTML = "";
-  maskedHint.textContent = "";
+
+  if (maskedHint) maskedHint.textContent = "";
+
   renderStatus();
 
   if (autoSpeak.checked) {
@@ -307,7 +314,7 @@ repeatBtn.addEventListener("click", async () => {
 stopBtn.addEventListener("click", stopSpeaking);
 
 revealBtn.addEventListener("click", () => {
-  correctSentence.textContent = currentSentence;
+  if (correctSentence) correctSentence.textContent = currentSentence;
   showInfo("Answer revealed.");
 });
 
