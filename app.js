@@ -1,4 +1,4 @@
-// Dictation Spelling Game (no backend)
+// Dictation Spelling Game
 
 // ---------- Utilities ----------
 function normalizeForLenientCompare(s) {
@@ -26,7 +26,11 @@ function levenshtein(a, b) {
   for (let i = 1; i <= m; i++) {
     for (let j = 1; j <= n; j++) {
       const cost = a[i - 1] === b[j - 1] ? 0 : 1;
-      dp[i][j] = Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + cost);
+      dp[i][j] = Math.min(
+        dp[i - 1][j] + 1,
+        dp[i][j - 1] + 1,
+        dp[i - 1][j - 1] + cost
+      );
     }
   }
   return dp[m][n];
@@ -102,9 +106,8 @@ const feedback = document.getElementById("feedback");
 const correctSentence = document.getElementById("correctSentence");
 const maskedHint = document.getElementById("maskedHint");
 
-// ElevenLabs controls (added in HTML)
+// ElevenLabs controls
 const ttsProvider = document.getElementById("ttsProvider");
-const elevenKey = document.getElementById("elevenKey");
 const elevenVoiceId = document.getElementById("elevenVoiceId");
 const elevenModel = document.getElementById("elevenModel");
 
@@ -131,6 +134,7 @@ function loadVoices() {
   const enIndex = voices.findIndex(v => (v.lang || "").toLowerCase().startsWith("en"));
   if (enIndex >= 0) voiceSelect.value = String(enIndex);
 }
+
 if ("speechSynthesis" in window) {
   loadVoices();
   window.speechSynthesis.onvoiceschanged = loadVoices;
@@ -140,6 +144,7 @@ if ("speechSynthesis" in window) {
 
 function speakBrowser(text) {
   if (!("speechSynthesis" in window)) return;
+
   window.speechSynthesis.cancel();
 
   const utter = new SpeechSynthesisUtterance(text);
@@ -157,41 +162,37 @@ function stopSpeakingBrowser() {
   window.speechSynthesis.cancel();
 }
 
-// ---------- ElevenLabs TTS (Client-side: NOT secure) ----------
-const elevenAudioCache = new Map(); // sentence -> objectURL
+// ---------- ElevenLabs TTS ----------
+const WORKER_TTS_URL = "https://broad-smoke-1c9d.brendanw.workers.dev";
+
+const elevenAudioCache = new Map();
 let currentAudio = null;
 
 async function getElevenAudioUrl(text) {
   if (elevenAudioCache.has(text)) return elevenAudioCache.get(text);
 
-  const key = (elevenKey?.value || "").trim();
   const voiceId = (elevenVoiceId?.value || "").trim();
   const modelId = (elevenModel?.value || "eleven_turbo_v2_5").trim();
 
-  if (!key || !voiceId) {
-    throw new Error("Missing ElevenLabs API key or voice ID.");
+  if (!voiceId) {
+    throw new Error("Missing ElevenLabs voice ID.");
   }
 
-  const url = `https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voiceId)}`;
-
-  const resp = await fetch(url, {
+  const resp = await fetch(WORKER_TTS_URL, {
     method: "POST",
     headers: {
-      "Content-Type": "application/json",
-      "xi-api-key": key,
-      "Accept": "audio/mpeg"
+      "Content-Type": "application/json"
     },
     body: JSON.stringify({
       text,
-      model_id: modelId,
-      // Optional tweak if you want:
-      // voice_settings: { stability: 0.5, similarity_boost: 0.75 }
+      voiceId,
+      modelId
     })
   });
 
   if (!resp.ok) {
     const msg = await resp.text().catch(() => "");
-    throw new Error(`ElevenLabs error ${resp.status}: ${msg || resp.statusText}`);
+    throw new Error(`TTS proxy error ${resp.status}: ${msg || resp.statusText}`);
   }
 
   const blob = await resp.blob();
@@ -201,10 +202,8 @@ async function getElevenAudioUrl(text) {
 }
 
 async function speakEleven(text) {
-  // stop any browser voice
   stopSpeakingBrowser();
 
-  // stop any current HTMLAudioElement
   if (currentAudio) {
     currentAudio.pause();
     currentAudio.currentTime = 0;
@@ -227,11 +226,11 @@ function stopSpeakingEleven() {
 
 async function speak(text) {
   const provider = (ttsProvider?.value || "browser");
+
   if (provider === "elevenlabs") {
     try {
       await speakEleven(text);
     } catch (e) {
-      // fallback to browser voice if ElevenLabs fails
       feedback.innerHTML = `<span class="bad">TTS error:</span> <div class="diff">${String(e.message || e)}</div>`;
       speakBrowser(text);
     }
@@ -278,7 +277,7 @@ function setRound(sentence) {
   studentInput.focus();
 }
 
-// ---------- Start Session (Hide sentence window) ----------
+// ---------- Start Session ----------
 function startSession() {
   const lines = sentencesInput.value
     .split("\n")
@@ -295,7 +294,6 @@ function startSession() {
   idx = 0;
   correct = 0;
 
-  // Hide the sentence editor UI after loading the deck
   if (setupPanel) setupPanel.style.display = "none";
 
   setEnabled(true);
@@ -338,8 +336,13 @@ repeatBtn.addEventListener("click", () => {
 
 stopBtn.addEventListener("click", stopSpeaking);
 
-rate.addEventListener("input", () => rateVal.textContent = Number(rate.value).toFixed(2));
-pitch.addEventListener("input", () => pitchVal.textContent = Number(pitch.value).toFixed(2));
+rate.addEventListener("input", () => {
+  rateVal.textContent = Number(rate.value).toFixed(2);
+});
+
+pitch.addEventListener("input", () => {
+  pitchVal.textContent = Number(pitch.value).toFixed(2);
+});
 
 revealBtn.addEventListener("click", () => {
   correctSentence.textContent = currentSentence;
@@ -354,7 +357,7 @@ checkBtn.addEventListener("click", () => {
 
   const strict = strictMode.checked;
   const typed = strict ? normalizeStrict(typedRaw) : normalizeForLenientCompare(typedRaw);
-  const corr  = strict ? normalizeStrict(correctRaw) : normalizeForLenientCompare(correctRaw);
+  const corr = strict ? normalizeStrict(correctRaw) : normalizeForLenientCompare(correctRaw);
 
   const dist = levenshtein(corr, typed);
   const isExact = (corr === typed);
@@ -385,8 +388,7 @@ nextBtn.addEventListener("click", () => {
   if (idx >= deck.length) {
     const total = deck.length;
     const missed = misses.length;
-    feedback.innerHTML =
-      `<span class="good">Done.</span> <div class="diff">Correct: ${correct}/${total}. Missed: ${missed}. Use “Retry Misses” if you want.</div>`;
+    feedback.innerHTML = `<span class="good">Done.</span> <div class="diff">Correct: ${correct}/${total}. Missed: ${missed}. Use “Retry Misses” if you want.</div>`;
     nextBtn.disabled = true;
     retryMissesBtn.disabled = (misses.length === 0);
     return;
