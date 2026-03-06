@@ -2,7 +2,7 @@
 
 // ---------- CONFIG ----------
 const WORKER_TTS_URL = "https://broad-smoke-1c9d.brendanw.workers.dev";
-const FIXED_VOICE_ID = "PASTE_YOUR_REAL_VOICE_ID_HERE";
+const FIXED_VOICE_ID = "hpp4J3VqNfWAUOO0d1Us";
 const FIXED_MODEL_ID = "eleven_turbo_v2_5";
 
 // ---------- Utilities ----------
