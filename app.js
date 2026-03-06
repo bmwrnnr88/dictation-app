@@ -7,18 +7,21 @@ const FIXED_MODEL_ID = "eleven_turbo_v2_5";
 
 // ---------- Utilities ----------
 function normalizeForLenientCompare(s) {
-  return s.replace(/[“”]/g, '"').replace(/[‘’]/g, "'").replace(/\s+/g, ' ').trim().toLowerCase();
+  return s.replace(/[“”]/g, '"').replace(/[‘’]/g, "'").replace(/\s+/g, " ").trim().toLowerCase();
 }
 
 function normalizeStrict(s) {
-  return s.replace(/[“”]/g, '"').replace(/[‘’]/g, "'").replace(/\s+/g, ' ').trim();
+  return s.replace(/[“”]/g, '"').replace(/[‘’]/g, "'").replace(/\s+/g, " ").trim();
 }
 
 function levenshtein(a, b) {
-  const m = a.length, n = b.length;
+  const m = a.length;
+  const n = b.length;
   const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+
   for (let i = 0; i <= m; i++) dp[i][0] = i;
   for (let j = 0; j <= n; j++) dp[0][j] = j;
+
   for (let i = 1; i <= m; i++) {
     for (let j = 1; j <= n; j++) {
       const cost = a[i - 1] === b[j - 1] ? 0 : 1;
@@ -29,11 +32,14 @@ function levenshtein(a, b) {
       );
     }
   }
+
   return dp[m][n];
 }
 
 function wordsOnly(s) {
-  return s.replace(/[“”]/g, '"').replace(/[‘’]/g, "'")
+  return s
+    .replace(/[“”]/g, '"')
+    .replace(/[‘’]/g, "'")
     .match(/[A-Za-z0-9]+(?:'[A-Za-z0-9]+)*/g) || [];
 }
 
@@ -46,10 +52,16 @@ function wordDiff(correct, typed) {
   for (let i = 0; i < max; i++) {
     const cw = c[i] ?? "";
     const tw = t[i] ?? "";
-    if (!cw && tw) lines.push(`+ extra: "${tw}"`);
-    else if (cw && !tw) lines.push(`- missing: "${cw}"`);
-    else if (cw !== tw) lines.push(`! "${tw}" → "${cw}"`);
+
+    if (!cw && tw) {
+      lines.push(`+ extra: "${tw}"`);
+    } else if (cw && !tw) {
+      lines.push(`- missing: "${cw}"`);
+    } else if (cw !== tw) {
+      lines.push(`! "${tw}" → "${cw}"`);
+    }
   }
+
   return lines;
 }
 
@@ -106,8 +118,23 @@ let lastSpoken = "";
 const audioCache = new Map();
 let currentAudio = null;
 
-// ---------- Helpers ----------
-function showError(message) {
+// ---------- Error / Info Helpers ----------
+function showError(error) {
+  console.error("TTS full error:", error);
+
+  let message = "Unknown error";
+
+  if (typeof error === "string" && error.trim()) {
+    message = error;
+  } else if (error && typeof error.message === "string" && error.message.trim()) {
+    message = error.message;
+  } else if (error && typeof error.toString === "function") {
+    const text = error.toString();
+    if (text && text !== "[object Object]") {
+      message = text;
+    }
+  }
+
   feedback.innerHTML = `<span class="bad">TTS error:</span><div class="diff">${message}</div>`;
 }
 
@@ -148,7 +175,9 @@ async function getElevenAudioUrl(text) {
 }
 
 async function speak(text) {
-  if (!text) throw new Error("No sentence loaded.");
+  if (!text) {
+    throw new Error("No sentence loaded.");
+  }
 
   if (currentAudio) {
     currentAudio.pause();
@@ -183,7 +212,7 @@ function setEnabled(enabled) {
   checkBtn.disabled = !enabled;
   nextBtn.disabled = !enabled;
   revealBtn.disabled = !enabled;
-  retryMissesBtn.disabled = (misses.length === 0);
+  retryMissesBtn.disabled = misses.length === 0;
 }
 
 function renderStatus() {
@@ -191,7 +220,7 @@ function renderStatus() {
   roundTotal.textContent = String(deck.length);
   correctCount.textContent = String(correct);
   missCount.textContent = String(misses.length);
-  retryMissesBtn.disabled = (misses.length === 0);
+  retryMissesBtn.disabled = misses.length === 0;
 }
 
 async function setRound(sentence) {
@@ -206,7 +235,7 @@ async function setRound(sentence) {
     try {
       await speak(sentence);
     } catch (err) {
-      showError(err.message || String(err));
+      showError(err);
     }
   }
 
@@ -217,7 +246,7 @@ async function setRound(sentence) {
 function startSession() {
   const lines = sentencesInput.value
     .split("\n")
-    .map(s => stripLeadingNumber(s).trim())
+    .map((s) => stripLeadingNumber(s).trim())
     .filter(Boolean);
 
   if (lines.length === 0) {
@@ -234,7 +263,7 @@ function startSession() {
 
   setEnabled(true);
   renderStatus();
-  setRound(deck[idx]).catch(err => showError(err.message || String(err)));
+  setRound(deck[idx]).catch((err) => showError(err));
 }
 
 startSessionBtn.addEventListener("click", startSession);
@@ -244,7 +273,7 @@ shuffleBtn.addEventListener("click", () => {
   if (!deck.length) return;
   shuffle(deck);
   idx = 0;
-  setRound(deck[idx]).catch(err => showError(err.message || String(err)));
+  setRound(deck[idx]).catch((err) => showError(err));
 });
 
 retryMissesBtn.addEventListener("click", () => {
@@ -253,7 +282,7 @@ retryMissesBtn.addEventListener("click", () => {
   misses = [];
   idx = 0;
   correct = 0;
-  setRound(deck[idx]).catch(err => showError(err.message || String(err)));
+  setRound(deck[idx]).catch((err) => showError(err));
 });
 
 speakBtn.addEventListener("click", async () => {
@@ -261,7 +290,7 @@ speakBtn.addEventListener("click", async () => {
   try {
     await speak(currentSentence);
   } catch (err) {
-    showError(err.message || String(err));
+    showError(err);
   }
 });
 
@@ -271,7 +300,7 @@ repeatBtn.addEventListener("click", async () => {
   try {
     await speak(lastSpoken);
   } catch (err) {
-    showError(err.message || String(err));
+    showError(err);
   }
 });
 
@@ -290,7 +319,7 @@ checkBtn.addEventListener("click", () => {
   const typed = strict ? normalizeStrict(typedRaw) : normalizeForLenientCompare(typedRaw);
   const corr = strict ? normalizeStrict(correctRaw) : normalizeForLenientCompare(correctRaw);
 
-  const isExact = (corr === typed);
+  const isExact = corr === typed;
 
   if (isExact) {
     correct += 1;
@@ -316,7 +345,7 @@ nextBtn.addEventListener("click", () => {
   }
 
   nextBtn.disabled = true;
-  setRound(deck[idx]).catch(err => showError(err.message || String(err)));
+  setRound(deck[idx]).catch((err) => showError(err));
 });
 
 studentInput.addEventListener("keydown", (e) => {
